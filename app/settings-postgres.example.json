@@ -1,24 +1,17 @@
 {
   "public": {
     "environment": "development",
-    "patreon": {
-      "clientId": "your_patreon_client_id",
-      "campaignId": "your_campaign_id"
-    },
+    "disablePatreon": true,
     "usePostgres": {
-      "creatures": false,
-      "creatureProperties": false,
-      "creatureVariables": false,
-      "creatureLogs": false,
-      "experiences": false,
-      "libraries": false,
-      "libraryNodes": false,
-      "users": false
+      "creatures": true,
+      "creatureProperties": true,
+      "creatureVariables": true,
+      "creatureLogs": true,
+      "experiences": true,
+      "libraries": true,
+      "libraryNodes": true,
+      "users": true
     }
-  },
-  "patreon": {
-    "clientSecret": "your_client_secret",
-    "creatorAccessToken": "your_creator_access_token"
   },
   "postgres": {
     "host": "db.yourproject.supabase.co",
@@ -30,5 +23,5 @@
     "supabaseUrl": "https://yourproject.supabase.co",
     "supabaseKey": "your_supabase_service_role_key"
   },
-  "comment": "To enable PostgreSQL for a collection, set its flag to true in public.usePostgres"
+  "comment": "Replace the postgres values above with your actual Supabase credentials. Set usePostgres flags to false to use MongoDB for specific collections."
 }
