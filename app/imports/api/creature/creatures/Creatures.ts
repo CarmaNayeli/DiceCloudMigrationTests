@@ -4,6 +4,7 @@ import SharingSchema from '/imports/api/sharing/SharingSchema';
 import STORAGE_LIMITS from '/imports/constants/STORAGE_LIMITS';
 import { InferType, TypedSimpleSchema } from '/imports/api/utility/TypedSimpleSchema';
 import type { Simplify } from 'type-fest';
+import { createCollection } from '/imports/api/db';
 
 const CreatureSettingsSchema = TypedSimpleSchema.from({
   //slowed down by carrying too much?
@@ -187,8 +188,10 @@ const CreatureSchema = TypedSimpleSchema.from({
 export type Creature = Simplify<{ _id: string } & InferType<typeof CreatureSchema>>;
 
 //set up the collection for creatures
-const Creatures = new Mongo.Collection<Creature>('creatures');
-Creatures.attachSchema(CreatureSchema);
+const Creatures = createCollection<Creature>({
+  name: 'creatures',
+  schema: CreatureSchema,
+}) as any;
 
 export default Creatures;
 export { CreatureSchema };

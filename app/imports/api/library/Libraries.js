@@ -8,6 +8,7 @@ import LibraryNodes from '/imports/api/library/LibraryNodes';
 import { getUserTier } from '/imports/api/users/patreon/tiers'
 import STORAGE_LIMITS from '/imports/constants/STORAGE_LIMITS';
 import { getFilter } from '/imports/api/parenting/parentingFunctions';
+import { createCollection } from '/imports/api/db';
 
 /**
  * Libraries are trees of library nodes where each node represents a character
@@ -18,7 +19,9 @@ import { getFilter } from '/imports/api/parenting/parentingFunctions';
  *
  * Permissions to library nodes are controlled by the libraries they belong to.
  */
-let Libraries = new Mongo.Collection('libraries');
+let Libraries = createCollection({
+  name: 'libraries',
+});
 
 let LibrarySchema = new SimpleSchema({
   name: {

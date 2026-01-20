@@ -9,6 +9,7 @@ import { parse, prettifyParseError } from '/imports/parser/parser';
 import resolve from '/imports/parser/resolve';
 import toString from '/imports/parser/toString';
 import STORAGE_LIMITS from '/imports/constants/STORAGE_LIMITS';
+import { createCollection } from '/imports/api/db';
 
 const PER_CREATURE_LOG_LIMIT = 100;
 
@@ -16,7 +17,10 @@ if (Meteor.isServer) {
   var sendWebhookAsCreature = require('/imports/server/discord/sendWebhook').sendWebhookAsCreature;
 }
 
-let CreatureLogs = new Mongo.Collection('creatureLogs');
+let CreatureLogs = createCollection({
+  name: 'creatureLogs',
+  tableName: 'creature_logs',
+});
 
 let CreatureLogSchema = new SimpleSchema({
   content: {

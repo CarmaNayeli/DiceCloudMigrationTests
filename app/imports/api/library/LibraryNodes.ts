@@ -19,6 +19,7 @@ import { rebuildNestedSets } from '/imports/api/parenting/parentingFunctions';
 import { ConvertToUnion, InferType, TypedSimpleSchema } from '/imports/api/utility/TypedSimpleSchema';
 import type { PropertyType } from '/imports/api/properties/PropertyType.type';
 import { Simplify } from 'type-fest';
+import { createCollection } from '/imports/api/db';
 
 const LibraryNodeSchema = TypedSimpleSchema.from({
   _id: {
@@ -112,7 +113,10 @@ export type LibraryNodeTypes = {
 
 export type LibraryNode = ConvertToUnion<LibraryNodeTypes>;
 
-const LibraryNodes = new Mongo.Collection<LibraryNode>('libraryNodes');
+const LibraryNodes = createCollection<LibraryNode>({
+  name: 'libraryNodes',
+  tableName: 'library_nodes',
+}) as any;
 
 // Set up server side search index
 if (Meteor.isServer) {
