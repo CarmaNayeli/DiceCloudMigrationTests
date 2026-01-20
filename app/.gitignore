@@ -8,6 +8,7 @@
 .DS_Store
 fileStorage
 settings.json
+settings-local.json
 public/components
 public/_imports.html
 private/oldClient
