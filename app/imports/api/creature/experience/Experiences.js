@@ -4,8 +4,11 @@ import { RateLimiterMixin } from 'ddp-rate-limiter-mixin';
 import { assertEditPermission } from '/imports/api/creature/creatures/creaturePermissions';
 import Creatures from '/imports/api/creature/creatures/Creatures';
 import STORAGE_LIMITS from '/imports/constants/STORAGE_LIMITS';
+import { createCollection } from '/imports/api/db';
 
-let Experiences = new Mongo.Collection('experiences');
+let Experiences = createCollection({
+  name: 'experiences',
+});
 
 let ExperienceSchema = new SimpleSchema({
   name: {

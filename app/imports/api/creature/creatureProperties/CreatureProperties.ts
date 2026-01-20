@@ -8,6 +8,7 @@ import STORAGE_LIMITS from '/imports/constants/STORAGE_LIMITS';
 import { ConvertToUnion, InferType, TypedSimpleSchema } from '/imports/api/utility/TypedSimpleSchema';
 import { Simplify } from 'type-fest';
 import type { PropertyType } from '/imports/api/properties/PropertyType.type';
+import { createCollection } from '/imports/api/db';
 
 const PreComputeCreaturePropertySchema = TypedSimpleSchema.from({
   _id: {
@@ -145,7 +146,10 @@ export type CreaturePropertyTypes = {
 
 export type CreatureProperty = Simplify<ConvertToUnion<CreaturePropertyTypes>>;
 
-const CreatureProperties = new Mongo.Collection<CreatureProperty>('creatureProperties');
+const CreatureProperties = createCollection<CreatureProperty>({
+  name: 'creatureProperties',
+  tableName: 'creature_properties',
+}) as any;
 
 const genericCreaturePropertySchema = TypedSimpleSchema.from({})
   .extend(CreaturePropertySchema)

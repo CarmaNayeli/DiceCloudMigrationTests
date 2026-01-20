@@ -2,9 +2,13 @@ import { getSingleProperty } from '/imports/api/engine/loadCreatures';
 import ParseNode from '/imports/parser/parseTree/ParseNode';
 import array from '/imports/parser/parseTree/array';
 import constant, { isFiniteNode } from '/imports/parser/parseTree/constant';
+import { createCollection } from '/imports/api/db';
 
 //set up the collection for creature variables
-const CreatureVariables = new Mongo.Collection('creatureVariables');
+const CreatureVariables = createCollection({
+  name: 'creatureVariables',
+  tableName: 'creature_variables',
+}) as any;
 
 // Unique index on _creatureId
 if (Meteor.isServer) {
