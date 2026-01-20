@@ -1,0 +1,43 @@
+{
+  "name": "dicecloud-migration-tools",
+  "version": "1.0.0",
+  "description": "MongoDB to PostgreSQL migration tools for DiceCloud",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "extract": "tsx src/index.ts extract",
+    "transform": "tsx src/index.ts transform",
+    "load": "tsx src/index.ts load",
+    "validate": "tsx src/index.ts validate",
+    "migrate": "tsx src/index.ts migrate",
+    "test": "tsx src/index.ts test-connection"
+  },
+  "keywords": [
+    "migration",
+    "mongodb",
+    "postgresql",
+    "supabase"
+  ],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "mongodb": "^6.3.0",
+    "pg": "^8.11.3",
+    "pg-copy-streams": "^6.0.5",
+    "dotenv": "^16.3.1",
+    "commander": "^11.1.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "p-queue": "^8.0.1",
+    "p-limit": "^5.0.0",
+    "zod": "^3.22.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/pg": "^8.10.9",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0"
+  }
+}
