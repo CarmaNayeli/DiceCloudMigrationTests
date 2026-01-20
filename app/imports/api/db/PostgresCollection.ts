@@ -32,6 +32,16 @@ interface Modifier {
   $addToSet?: Record<string, any>;
 }
 
+interface ObserveCallbacks<T> {
+  added?: (id: string, fields: Partial<T>) => void;
+  changed?: (id: string, fields: Partial<T>) => void;
+  removed?: (id: string) => void;
+}
+
+interface ObserveHandle {
+  stop: () => void;
+}
+
 export class PostgresCollection<T extends Record<string, any> = any> {
   public tableName: string;
   public idField: string;
@@ -310,6 +320,111 @@ export class PostgresCollection<T extends Record<string, any> = any> {
     }
   }
 
+  /**
+   * Observe changes using Supabase Realtime (replaces MongoDB oplog tailing)
+   *
+   * This method enables real-time change notifications similar to MongoDB's
+   * observeChanges. It uses Supabase Realtime which listens to PostgreSQL's
+   * Write-Ahead Log (WAL) for changes.
+   *
+   * @param callbacks - Object with added, changed, removed callbacks
+   * @returns ObserveHandle with stop() method to cleanup subscription
+   */
+  observeChanges(callbacks: ObserveCallbacks<T>): ObserveHandle {
+    if (!this.supabase) {
+      throw new Error('Supabase client not initialized. Check your settings.');
+    }
+
+    // Generate unique channel name for this subscription
+    const channelName = `${this.tableName}_changes_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log(`[Realtime] Subscribing to ${this.tableName} on channel ${channelName}`);
+
+    // Create Realtime channel
+    const channel = this.supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: this.tableName,
+        },
+        (payload) => {
+          if (callbacks.added) {
+            const doc = payload.new as T;
+            const id = doc[this.idField];
+
+            // Remove id from fields (Meteor convention)
+            const fields = { ...doc };
+            delete fields[this.idField];
+
+            callbacks.added(id, fields);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: this.tableName,
+        },
+        (payload) => {
+          if (callbacks.changed) {
+            const doc = payload.new as T;
+            const id = doc[this.idField];
+
+            // Calculate changed fields by comparing old and new
+            const fields: Partial<T> = {};
+            const oldDoc = payload.old as T;
+
+            for (const key in doc) {
+              if (key !== this.idField && doc[key] !== oldDoc[key]) {
+                fields[key] = doc[key];
+              }
+            }
+
+            callbacks.changed(id, fields);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: this.tableName,
+        },
+        (payload) => {
+          if (callbacks.removed) {
+            const doc = payload.old as T;
+            const id = doc[this.idField];
+            callbacks.removed(id);
+          }
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[Realtime] Successfully subscribed to ${this.tableName}`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`[Realtime] Error subscribing to ${this.tableName}:`, err);
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`[Realtime] Subscription to ${this.tableName} timed out`);
+        } else if (status === 'CLOSED') {
+          console.log(`[Realtime] Subscription to ${this.tableName} closed`);
+        }
+      });
+
+    // Return handle compatible with Meteor's ObserveHandle
+    return {
+      stop: () => {
+        console.log(`[Realtime] Unsubscribing from ${this.tableName}`);
+        this.supabase?.removeChannel(channel);
+      },
+    };
+  }
+
   // ============================================================================
   // Helper Methods
   // ============================================================================
@@ -549,6 +664,64 @@ class FindCursor<T> {
     this.options.limit = 1;
     const results = await this.fetch();
     return results[0];
+  }
+
+  /**
+   * Observe changes to documents matching this cursor's selector
+   * This is the method Meteor publications use for reactivity
+   */
+  observeChanges(callbacks: ObserveCallbacks<T>): ObserveHandle {
+    // For cursors with filters, we need to wrap the callbacks to only
+    // notify about documents matching the selector
+    const wrappedCallbacks: ObserveCallbacks<T> = {
+      added: callbacks.added ? async (id, fields) => {
+        // Check if document matches selector
+        if (await this.documentMatchesSelector(id, fields)) {
+          callbacks.added!(id, fields);
+        }
+      } : undefined,
+
+      changed: callbacks.changed ? async (id, fields) => {
+        // Check if document still matches selector after change
+        if (await this.documentMatchesSelector(id, fields)) {
+          callbacks.changed!(id, fields);
+        } else if (callbacks.removed) {
+          // Document no longer matches - treat as removed
+          callbacks.removed(id);
+        }
+      } : undefined,
+
+      removed: callbacks.removed,
+    };
+
+    // Delegate to collection's observeChanges
+    return this.collection.observeChanges(wrappedCallbacks);
+  }
+
+  /**
+   * Check if a document matches this cursor's selector
+   * Used for filtering Realtime events
+   */
+  private async documentMatchesSelector(id: string, fields: Partial<T>): Promise<boolean> {
+    // If no selector, all documents match
+    if (Object.keys(this.selector).length === 0) {
+      return true;
+    }
+
+    // Fetch the full document and check against selector
+    const doc = await this.collection.findOne({ [this.collection.idField]: id } as any);
+    if (!doc) {
+      return false;
+    }
+
+    // Simple selector matching (extend as needed)
+    for (const [key, value] of Object.entries(this.selector)) {
+      if (doc[key] !== value) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private buildSelectClause(): string {
